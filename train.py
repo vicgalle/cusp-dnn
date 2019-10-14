@@ -13,10 +13,11 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', help="enable gpu training and inference",
                     action="store_true", default=True)
-parser.add_argument('--lr', type=float, default=0.01)
-parser.add_argument('--momentum', type=float, default=0.5)
+parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--res', help="enable residual connections",
                     action="store_true", default=False)
+parser.add_argument('--n_res', type=int, default=1)
+parser.add_argument('--hid_dim', type=int, default=50)
 parser.add_argument('--batch_size', type=int, default=512)
 parser.add_argument('--test_batch_size', type=int, default=1000)
 parser.add_argument('--epochs', type=int, default=10)
@@ -88,10 +89,12 @@ if args.dataset=='mnist':
 
     # The size of the input. MNIST are greyscale images, 28x28 pixels each
     in_size = 28*28
+    out_dim = 10
 
-model = MLP(in_size, args.res).to(device)
-optimizer = optim.SGD(model.parameters(), lr=args.lr,
-                      momentum=args.momentum)
+model = MLP(in_size, out_dim, args.hid_dim, args).to(device)
+optimizer = optim.Adam(model.parameters(), lr=args.lr)
+
+print(model)
 
 training_losses = []
 for epoch in range(1, args.epochs + 1):
