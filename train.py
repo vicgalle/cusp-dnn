@@ -10,16 +10,23 @@ from torchvision import datasets, transforms
 
 from models import MLP, Dropout
 
+# TODOs
+
+# Fix hyperparameters to match previous literature
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', help="enable gpu training and inference",
                     action="store_true", default=True)
+
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--res', help="enable residual connections",
                     action="store_true", default=False)
 parser.add_argument('--n_res', type=int, default=1)
 parser.add_argument('--p_ber', type=float, default=0.1)
-parser.add_argument('-s', '--samples', type=int, default=1)
+parser.add_argument('--l2', type=float, default=1e-4)
+#parser.add_argument('-s', '--samples', type=int, default=1)
 parser.add_argument('--hid_dim', type=int, default=50)
+
 parser.add_argument('--batch_size', type=int, default=512)
 parser.add_argument('--test_batch_size', type=int, default=1000)
 parser.add_argument('--epochs', type=int, default=10)
@@ -102,7 +109,7 @@ elif args.noise == 'bernoulli':
     dropout = Dropout(p=args.p_ber).to(device)
 
 model = MLP(in_size, out_dim, args.hid_dim, dropout,  args).to(device)
-optimizer = optim.Adam(model.parameters(), lr=args.lr)
+optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.l2)
 
 print(model)
 
