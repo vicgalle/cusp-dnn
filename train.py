@@ -1,14 +1,14 @@
+import argparse
+import time
+
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
-import matplotlib.pyplot as plt
 
-from models import MLP
-
-import argparse
-
+from models import MLP, Dropout
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', help="enable gpu training and inference",
@@ -17,6 +17,8 @@ parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--res', help="enable residual connections",
                     action="store_true", default=False)
 parser.add_argument('--n_res', type=int, default=1)
+parser.add_argument('--p_ber', type=float, default=0.1)
+parser.add_argument('-s', '--samples', type=int, default=1)
 parser.add_argument('--hid_dim', type=int, default=50)
 parser.add_argument('--batch_size', type=int, default=512)
 parser.add_argument('--test_batch_size', type=int, default=1000)
@@ -25,6 +27,9 @@ parser.add_argument('--seed', type=int, default=0)
 
 ds = ['mnist']
 parser.add_argument('--dataset', choices=ds, default='mnist')
+
+noises = ['none', 'bernoulli']
+parser.add_argument('--noise', choices=noises, default='none')
 
 
 args = parser.parse_args()
@@ -91,12 +96,21 @@ if args.dataset=='mnist':
     in_size = 28*28
     out_dim = 10
 
-model = MLP(in_size, out_dim, args.hid_dim, args).to(device)
+if args.noise == 'none':
+    dropout = lambda x : x
+elif args.noise == 'bernoulli':
+    dropout = Dropout(p=args.p_ber).to(device)
+
+model = MLP(in_size, out_dim, args.hid_dim, dropout,  args).to(device)
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
 print(model)
 
 training_losses = []
 for epoch in range(1, args.epochs + 1):
+    t0 = time.time()
     train(model, device, train_loader, optimizer, epoch, training_losses)
+    t1 = time.time()
+    print('Epoch ', epoch, '\tdt = ', t1 - t0)
+    
     test(model, device, test_loader)
