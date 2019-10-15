@@ -8,10 +8,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 
-from models import MLP, Dropout
+from models import MLP, Dropout, CumulativeDropout
+from diagnostics import do_diagnostics
 
 # TODOs
-
 # Fix hyperparameters to match previous literature
 
 parser = argparse.ArgumentParser()
@@ -35,7 +35,7 @@ parser.add_argument('--seed', type=int, default=0)
 ds = ['mnist']
 parser.add_argument('--dataset', choices=ds, default='mnist')
 
-noises = ['none', 'bernoulli']
+noises = ['none', 'bernoulli', 'cumulative_bern']
 parser.add_argument('--noise', choices=noises, default='none')
 
 
@@ -83,13 +83,14 @@ def test(model, device, test_loader):
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
-if args.dataset=='mnist':
+
+if args.dataset == 'mnist':
     train_loader = torch.utils.data.DataLoader(
         datasets.MNIST('../data', train=True, download=True,
-                    transform=transforms.Compose([
-                        transforms.ToTensor(),
-                        transforms.Normalize((0.1307,), (0.3081,))
-                    ])),
+                       transform=transforms.Compose([
+                           transforms.ToTensor(),
+                           transforms.Normalize((0.1307,), (0.3081,))
+                       ])),
         batch_size=args.batch_size, shuffle=True)
 
     test_loader = torch.utils.data.DataLoader(
@@ -104,9 +105,11 @@ if args.dataset=='mnist':
     out_dim = 10
 
 if args.noise == 'none':
-    dropout = lambda x : x
+    def dropout(x): return x
 elif args.noise == 'bernoulli':
     dropout = Dropout(p=args.p_ber).to(device)
+elif args.noise == 'cumulative_bern':
+    dropout = CumulativeDropout().to(device)
 
 model = MLP(in_size, out_dim, args.hid_dim, dropout,  args).to(device)
 optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.l2)
@@ -119,5 +122,7 @@ for epoch in range(1, args.epochs + 1):
     train(model, device, train_loader, optimizer, epoch, training_losses)
     t1 = time.time()
     print('Epoch ', epoch, '\tdt = ', t1 - t0)
-    
+
     test(model, device, test_loader)
+
+do_diagnostics(model, args)

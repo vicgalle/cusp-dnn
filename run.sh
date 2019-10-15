@@ -1,1 +1,1 @@
-python train.py --res --n_res 10 --noise bernoulli
+python train.py --res --n_res 5 --noise cumulative_bern

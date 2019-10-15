@@ -4,7 +4,10 @@ import torch.nn.functional as F
 
 # check what to do with the biases of the linear layers. How do they do in Gal et al?
 
+
 class MLP(nn.Module):
+    """ A standard feedforward neural network with options for residual connections and dropouts """
+
     def __init__(self, in_dim, out_dim, hid_dim, dropout, other_args):
         super(MLP, self).__init__()
         self.d_in = in_dim
@@ -13,36 +16,63 @@ class MLP(nn.Module):
         self.dropout = dropout
 
         self.fc_in = nn.Linear(self.d_in, hid_dim)
-        self.fc_inners = nn.ModuleList([nn.Linear(hid_dim, hid_dim) for _ in range(self.n_res)])
+        self.fc_inners = nn.ModuleList(
+            [nn.Linear(hid_dim, hid_dim, bias=False) for _ in range(self.n_res)])
         self.fc_out = nn.Linear(hid_dim, out_dim)
 
     def forward(self, x):
         x = x.view(-1, self.d_in)
         x = F.relu(self.fc_in(x))
 
-        for fc_inner in self.fc_inners:
+        for l, fc_inner in enumerate(self.fc_inners):
 
-            x_d = self.dropout(x)
-            
+            x_d = self.dropout(x, l)
+
             if self.residual:
                 x = F.relu(fc_inner(x_d)) + x
             else:
                 x = F.relu(fc_inner(x_d))
-        
+
         x = self.fc_out(x)
         return F.log_softmax(x)
+
 
 class Dropout(nn.Module):
     """ This module adds (standard Bernoulli) Dropout to the following weights of a layer.
     """
+
     def __init__(self, p=0.1):
         super(Dropout, self).__init__()
         assert p <= 1.
         assert p >= 0.
         self.p = p
 
-    def forward(self, x):
+    def forward(self, x, context=None):
         if self.training:
-            binomial = torch.distributions.binomial.Binomial(probs=torch.tensor(1-self.p, device=x.device))
-            x = x * binomial.sample(x.size()) * ( 1. / ( 1. - self.p))   # inverted dropout
+            binomial = torch.distributions.binomial.Binomial(
+                probs=torch.tensor(1-self.p, device=x.device))
+            x = x * binomial.sample(x.size()) * \
+                (1. / (1. - self.p))   # inverted dropout
+        return x
+
+
+class CumulativeDropout(nn.Module):
+    """ This module adds cumulative (standard Bernoulli) Dropout to the following weights of a layer.
+    """
+
+    def __init__(self, p=0.1, step=0.1):
+        super(CumulativeDropout, self).__init__()
+        assert p <= 1.
+        assert p >= 0.
+        self.p = p
+        self.step = step
+
+    def forward(self, x, context=0):
+        # We increase the dropout amount with the context (represents the layer)
+        if self.training:
+            p = self.p + context*self.step
+            binomial = torch.distributions.binomial.Binomial(
+                probs=torch.tensor(1-p, device=x.device))
+            x = x * binomial.sample(x.size()) * \
+                (1. / (1. - p))   # inverted dropout
         return x
