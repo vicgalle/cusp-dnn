@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import utils as ut
 
 # check what to do with the biases of the linear layers. How do they do in Gal et al?
 
@@ -75,4 +76,32 @@ class CumulativeDropout(nn.Module):
                 probs=torch.tensor(1-p, device=x.device))
             x = x * binomial.sample(x.size()) * \
                 (1. / (1. - p))   # inverted dropout
+        return x
+
+class GammaProcesses(nn.Module):
+    """ This module implements the additive gamma "dropout"
+    * L is an int indicating the number of layersself.
+    * typ is a string with possible values "exp", "mul", "add", indicating
+    type of prior (exponential, additive gamma, multiplicative gamma)
+    * a1 and a2 are the two parameters of the gammas/exponentials
+    """
+
+    def __init__(self, a1=3.0, a2=4.0, L=5, typ="exp"):
+        super(GammaProcesses, self).__init__()
+        self.typ = typ
+        self.L = L
+        self.a1 = a1
+        self.a2 = a2
+        ## Initialize the probs
+        if self.typ == "exp":
+            self.pp = ut.additive_exponential(self.a1, self.a2, self.L)
+        elif self.typ == "add":
+            self.pp = ut.additive_gamma(self.a1, self.a2, self.L)
+        elif self.typ == "mul":
+            self.pp = ut.multiplicative_gamma(self.a1, self.a2, self.L)
+
+    def forward(self, x, context=0):
+        # Context is the index of the layer
+        if self.training:
+            x = x * self.pp
         return x

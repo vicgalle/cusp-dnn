@@ -21,7 +21,6 @@ def multiplicative_gamma(a1, a2, h):
     ##
     return taus
 
-
 def additive_gamma(a1, a2, h):
     """
     Samples from additive gamma process
