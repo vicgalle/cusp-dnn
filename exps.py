@@ -43,7 +43,7 @@ test_xs = np.reshape(test_xs, (test_points, 1))
 test_ys = target_fn(test_xs)
 test = (test_xs, test_ys)
 
-custom = True
+custom = False
 if custom == False:
     init_fn, apply_fn, kernel_fn = stax.serial(
         stax.Dense(10, W_std=1., b_std=0.0), stax.Erf(),
@@ -52,8 +52,8 @@ if custom == False:
     )
 else:
     init_fn, apply_fn, kernel_fn = stax.serial(
-        Dense(5, W_std=1., b_std=0.0), stax.Erf(),
-        Dense(5, W_std=1., b_std=0.0), stax.Erf(),
+        Dense(10, W_std=1., b_std=0.0), stax.Erf(),
+        Dense(10, W_std=1., b_std=0.0), stax.Erf(),
         Dense(1, W_std=1., b_std=0.0)
     )
 
@@ -93,6 +93,7 @@ for i in range(training_steps):
   if i % 1000 == 1:
 
         print(loss(get_params(opt_state), *train))
+        #print(get_params(opt_state))
         print(loss(get_params(opt_state), *test))
 
 print('NTK')

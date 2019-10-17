@@ -148,7 +148,7 @@ def _randn2(a=0.5):
   """`stax.randn` for implicitly-typed results."""
   def init(rng, shape):
     s = random.normal(rng, shape)
-    stddevs = np.cumprod(np.repeat(np.sqrt(a), s.shape[-1]))   # in the limit, these squares sum up to 1
+    stddevs = np.sqrt(np.cumprod(np.repeat(a, s.shape[-1])))   # in the limit, these squares sum up to 1
     return stddevs * s
   return init
 
@@ -726,7 +726,7 @@ def Dense(out_dim, W_std=1., b_std=0., W_init=_randn(1.), b_init=_randn(1.0)):
   def apply_fn(params, inputs, **kwargs):
     W, b = params
     norm = W_std / np.sqrt(inputs.shape[-1])
-    #norm = W_std * np.cumprod(np.repeat(np.sqrt(0.5), inputs.shape[-1]))**(-1)
+    norm = W_std * np.sqrt(np.cumprod(np.repeat(0.5, inputs.shape[-1])))
     return norm * np.dot(inputs, W) + b_std * b
 
   def kernel_fn(kernels):
