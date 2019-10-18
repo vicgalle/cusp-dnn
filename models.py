@@ -86,7 +86,7 @@ class GammaProcesses(nn.Module):
     * a1 and a2 are the two parameters of the gammas/exponentials
     """
 
-    def __init__(self, a1=3.0, a2=4.0, L=5, typ="exp"):
+    def __init__(self, typ="exp", a1=3.0, a2=4.0, L=5):
         super(GammaProcesses, self).__init__()
         self.typ = typ
         self.L = L
