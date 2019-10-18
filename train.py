@@ -35,7 +35,7 @@ parser.add_argument('--seed', type=int, default=0)
 ds = ['mnist']
 parser.add_argument('--dataset', choices=ds, default='mnist')
 
-noises = ['none', 'bernoulli', 'cumulative_bern']
+noises = ['none', 'bernoulli', 'cumulative_bern', 'addexp', 'addgamm', 'cumgamm']
 parser.add_argument('--noise', choices=noises, default='none')
 
 
@@ -110,6 +110,8 @@ elif args.noise == 'bernoulli':
     dropout = Dropout(p=args.p_ber).to(device)
 elif args.noise == 'cumulative_bern':
     dropout = CumulativeDropout().to(device)
+elif args.noise == 'addexp':
+    dropout == GammaProcesses(typ='exp')
 
 model = MLP(in_size, out_dim, args.hid_dim, dropout,  args).to(device)
 optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.l2)
