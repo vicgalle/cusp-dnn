@@ -105,3 +105,16 @@ class GammaProcesses(nn.Module):
         if self.training:
             x = x * self.pp
         return x
+
+class ExpDecayGauss(nn.Module):
+    """ This module adds Gaussian noise of decaying deviation following weights of a layer.
+    """
+
+    def __init__(self, p=0.5):
+        super(ExpDecayGauss, self).__init__()
+        self.p = p
+
+    def forward(self, x, context=None):
+        sdevs = torch.cumprod(self.p*torch.ones(x.size(), device=x.device), dim=-1)
+        n = torch.distributions.Normal(0., sdevs).sample()
+        return x * n
