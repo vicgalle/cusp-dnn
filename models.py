@@ -86,7 +86,7 @@ class GammaProcesses(nn.Module):
     * a1 and a2 are the two parameters of the gammas/exponentials
     """
 
-    def __init__(self, typ="exp", a1=3.0, a2=4.0, L=5):
+    def __init__(self, typ="exp", a1=10.0, a2=10.0, L=5):
         super(GammaProcesses, self).__init__()
         self.typ = typ
         self.L = L
@@ -103,7 +103,7 @@ class GammaProcesses(nn.Module):
     def forward(self, x, context=0):
         # Context is the index of the layer
         if self.training:
-            x = x * self.pp
+            x = x * self.pp[context]
         return x
 
 class ExpDecayGauss(nn.Module):

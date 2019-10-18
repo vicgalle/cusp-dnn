@@ -106,12 +106,22 @@ if args.dataset == 'mnist':
 
 if args.noise == 'none':
     def dropout(x, context): return x
+
 elif args.noise == 'bernoulli':
     dropout = Dropout(p=args.p_ber).to(device)
+
 elif args.noise == 'cumulative_bern':
     dropout = CumulativeDropout().to(device)
+
 elif args.noise == 'addexp':
-    dropout == GammaProcesses(typ='exp')
+    dropout = GammaProcesses(typ='exp')
+
+elif args.noise == 'addgamm':
+    dropout = GammaProcesses(typ='add')
+
+elif args.noise == 'cumgamm':
+    dropout = GammaProcesses(typ='mul')
+
 elif args.noise == 'decay_gauss':
     dropout = ExpDecayGauss().to(device)
 
