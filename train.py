@@ -21,8 +21,11 @@ parser.add_argument('--gpu', help="enable gpu training and inference",
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--res', help="enable residual connections",
                     action="store_true", default=False)
-parser.add_argument('--n_res', type=int, default=1)
+parser.add_argument('--n_res', type=int, default=1) ## Number of layers
 parser.add_argument('--p_ber', type=float, default=0.1)
+##
+parser.add_argument('--a1', type=float, default=10.0) #Parameter of first gamma
+parser.add_argument('--a2', type=float, default=10.0) #Parameter of second gamma
 parser.add_argument('--l2', type=float, default=1e-4)
 #parser.add_argument('-s', '--samples', type=int, default=1)
 parser.add_argument('--hid_dim', type=int, default=50)
@@ -114,13 +117,13 @@ elif args.noise == 'cumulative_bern':
     dropout = CumulativeDropout().to(device)
 
 elif args.noise == 'addexp':
-    dropout = GammaProcesses(typ='exp')
+    dropout = GammaProcesses('exp', args.a1, args.a2, args.n_res)
 
 elif args.noise == 'addgamm':
-    dropout = GammaProcesses(typ='add')
+    dropout = GammaProcesses('add', args.a1, args.a2, args.n_res)
 
 elif args.noise == 'cumgamm':
-    dropout = GammaProcesses(typ='mul')
+    dropout = GammaProcesses('mul', args.a1, args.a2, args.n_res)
 
 elif args.noise == 'decay_gauss':
     dropout = ExpDecayGauss().to(device)
