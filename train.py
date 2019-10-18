@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 
-from models import MLP, Dropout, CumulativeDropout
+from models import *
 from diagnostics import do_diagnostics
 
 # TODOs
@@ -35,7 +35,11 @@ parser.add_argument('--seed', type=int, default=0)
 ds = ['mnist']
 parser.add_argument('--dataset', choices=ds, default='mnist')
 
+<<<<<<< HEAD
 noises = ['none', 'bernoulli', 'cumulative_bern', 'addexp', 'addgamm', 'cumgamm']
+=======
+noises = ['none', 'bernoulli', 'cumulative_bern', 'decay_gauss']
+>>>>>>> 3eb605c36327b68dc7143afd1fff23ab2df06443
 parser.add_argument('--noise', choices=noises, default='none')
 
 
@@ -105,13 +109,18 @@ if args.dataset == 'mnist':
     out_dim = 10
 
 if args.noise == 'none':
-    def dropout(x): return x
+    def dropout(x, context): return x
 elif args.noise == 'bernoulli':
     dropout = Dropout(p=args.p_ber).to(device)
 elif args.noise == 'cumulative_bern':
     dropout = CumulativeDropout().to(device)
+<<<<<<< HEAD
 elif args.noise == 'addexp':
     dropout == GammaProcesses(typ='exp')
+=======
+elif args.noise == 'decay_gauss':
+    dropout = ExpDecayGauss().to(device)
+>>>>>>> 3eb605c36327b68dc7143afd1fff23ab2df06443
 
 model = MLP(in_size, out_dim, args.hid_dim, dropout,  args).to(device)
 optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.l2)
