@@ -21,3 +21,6 @@ def do_diagnostics(model, args):
             plt.matshow(param.data.cpu())
             plt.colorbar()
             plt.savefig(directory + name + '_' + args.noise +'.png')
+
+            # Now we set small weights to just 0., as pruning
+            
