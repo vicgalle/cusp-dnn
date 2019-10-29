@@ -20,9 +20,12 @@ class MLP(nn.Module):
         self.fc_inners = nn.ModuleList(
             [nn.Linear(hid_dim, hid_dim, bias=False) for _ in range(self.n_res)])
         self.fc_out = nn.Linear(hid_dim, out_dim)
+        self.args = other_args
 
     def forward(self, x):
-        x = x.view(-1, self.d_in)
+        #print(x.shape)
+        x = x.reshape(x.shape[0], self.d_in)
+        #print(x.shape)
         x = F.relu(self.fc_in(x))
 
         for l, fc_inner in enumerate(self.fc_inners):

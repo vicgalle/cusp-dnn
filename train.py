@@ -35,7 +35,7 @@ parser.add_argument('--test_batch_size', type=int, default=1000)
 parser.add_argument('--epochs', type=int, default=10)
 parser.add_argument('--seed', type=int, default=0)
 
-ds = ['mnist']
+ds = ['mnist', 'cifar']
 parser.add_argument('--dataset', choices=ds, default='mnist')
 
 noises = ['none', 'bernoulli', 'cumulative_bern', 'decay_gauss', 'addexp', 'addgamm', 'cumgamm']
@@ -89,22 +89,40 @@ def test(model, device, test_loader):
 
 if args.dataset == 'mnist':
     train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=True, download=True,
+        datasets.MNIST('../data', train=True, download=True, 
                        transform=transforms.Compose([
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
-        batch_size=args.batch_size, shuffle=True)
+        batch_size=args.batch_size, shuffle=True, num_workers=2)
 
     test_loader = torch.utils.data.DataLoader(
         datasets.MNIST('../data', train=False, transform=transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,))
         ])),
-        batch_size=args.test_batch_size, shuffle=True)
+        batch_size=args.test_batch_size, shuffle=True, num_workers=2)
 
     # The size of the input. MNIST are greyscale images, 28x28 pixels each
     in_size = 28*28
+    out_dim = 10
+
+elif args.dataset == 'cifar':
+    transform = transforms.Compose(
+        [transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+    trainset = datasets.CIFAR10(root='../data', train=True,
+                                            download=True, transform=transform)
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size,
+                                            shuffle=True, num_workers=2)
+
+    testset = datasets.CIFAR10(root='../data', train=False,
+                                        download=True, transform=transform)
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size,
+                                            shuffle=False, num_workers=2)
+
+    in_size = 32*32*3
     out_dim = 10
 
 if args.noise == 'none':
