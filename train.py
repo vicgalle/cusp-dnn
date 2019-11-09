@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torchvision import datasets, transforms
+from torchvision import datasets, transforms, models
 
 from models import *
 from diagnostics import do_diagnostics
@@ -50,13 +50,14 @@ use_cuda = args.gpu
 device = torch.device("cuda" if use_cuda else "cpu")
 
 
-def train(model, device, train_loader, optimizer, epoch, train_losses):
+def train(model, device, train_loader, optimizer, epoch, train_losses, criterion):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
-        loss = F.nll_loss(output, target)
+        #loss = F.nll_loss(output, target)
+        loss = criterion(output, target)
         loss.backward()
         optimizer.step()
         if batch_idx % 100 == 0:
@@ -66,7 +67,7 @@ def train(model, device, train_loader, optimizer, epoch, train_losses):
             train_losses.append(loss.item())
 
 
-def test(model, device, test_loader):
+def test(model, device, test_loader, criterion):
     model.eval()
     test_loss = 0
     correct = 0
@@ -75,7 +76,8 @@ def test(model, device, test_loader):
             data, target = data.to(device), target.to(device)
             output = model(data)
             # sum up batch loss
-            test_loss += F.nll_loss(output, target, reduction='sum').item()
+            #test_loss += F.nll_loss(output, target, reduction='sum').item()
+            test_loss += criterion(output, target).item()
             # get the index of the max log-probability
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
@@ -108,17 +110,25 @@ if args.dataset == 'mnist':
     out_dim = 10
 
 elif args.dataset == 'cifar':
-    transform = transforms.Compose(
-        [transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+
+    transform_test = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
 
     trainset = datasets.CIFAR10(root='../data', train=True,
-                                            download=True, transform=transform)
+                                            download=True, transform=transform_train)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size,
                                             shuffle=True, num_workers=2)
 
     testset = datasets.CIFAR10(root='../data', train=False,
-                                        download=True, transform=transform)
+                                        download=True, transform=transform_test)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size,
                                             shuffle=False, num_workers=2)
 
@@ -147,17 +157,24 @@ elif args.noise == 'decay_gauss':
     dropout = ExpDecayGauss().to(device)
 
 model = MLP(in_size, out_dim, args.hid_dim, dropout,  args).to(device)
+
+model = models.resnet18(pretrained=False).to(device)
+
+criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.l2)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer,  milestones=[150, 250], gamma=0.1)
 
 print(model)
 
 training_losses = []
 for epoch in range(1, args.epochs + 1):
     t0 = time.time()
-    train(model, device, train_loader, optimizer, epoch, training_losses)
+    train(model, device, train_loader, optimizer, epoch, training_losses, criterion)
     t1 = time.time()
     print('Epoch ', epoch, '\tdt = ', t1 - t0)
 
-    test(model, device, test_loader)
+    test(model, device, test_loader, criterion)
+
+    scheduler.step()
 
 do_diagnostics(model, args)

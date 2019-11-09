@@ -4,8 +4,6 @@ import torch.nn.functional as F
 import utils as ut
 
 # check what to do with the biases of the linear layers. How do they do in Gal et al?
-
-
 class MLP(nn.Module):
     """ A standard feedforward neural network with options for residual connections and dropouts """
 
@@ -23,9 +21,7 @@ class MLP(nn.Module):
         self.args = other_args
 
     def forward(self, x):
-        #print(x.shape)
         x = x.reshape(x.shape[0], self.d_in)
-        #print(x.shape)
         x = F.relu(self.fc_in(x))
 
         for l, fc_inner in enumerate(self.fc_inners):
@@ -38,7 +34,7 @@ class MLP(nn.Module):
                 x = F.relu(fc_inner(x_d))
 
         x = self.fc_out(x)
-        return F.log_softmax(x)
+        return x
 
 
 class Dropout(nn.Module):
